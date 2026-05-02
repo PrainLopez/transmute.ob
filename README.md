@@ -1,11 +1,3 @@
-# Elysia with Bun runtime
-
-## Getting Started
-To get started with this template, simply paste this command into your terminal:
-```bash
-bun create elysia ./elysia-example
-```
-
 ## Development
 To start the development server run:
 ```bash
@@ -13,3 +5,17 @@ bun run dev
 ```
 
 Open http://localhost:3000/ with your browser to see the result.
+
+## Env
+Copy `.env.example` and set values if needed.
+
+Defaults:
+- `LISTEN_IP=127.0.0.1`
+- `PORT=3000`
+
+## Testing
+Tests live in `test/`.
+
+```bash
+bun test
+```
