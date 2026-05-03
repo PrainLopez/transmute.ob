@@ -7,6 +7,10 @@ import {
 } from "./listen-config";
 import { validateOpenRequest } from "./request-validator";
 import { renderOpenPage } from "./render-open-page";
+import { renderTransmuteFormPage } from "./render-transmute-page";
+import { jsonError } from "./json-response";
+import { buildTransmuteOpenUrl, parseTransmuteInput } from "./transmute";
+import { renderTransmuteResultPage } from "./render-transmute-result-page";
 
 type ListenDeps = {
   env?: ListenEnv;
@@ -14,15 +18,18 @@ type ListenDeps = {
   start?: (config: ListenConfig) => unknown;
 };
 
-export const app = new Elysia().all("/", handleRootRequest).all("/open", handleOpenRequest);
+export const app = new Elysia()
+  .all("/", handleRootRequest)
+  .all("/open", handleOpenRequest)
+  .all("/transmute", handleTransmuteRequest);
 
 function handleRootRequest({ request }: { request: Request }) {
-  return request.method === "GET" ? "ok" : methodNotAllowed();
+  return request.method === "GET" ? "ok" : methodNotAllowed(["GET"]);
 }
 
 function handleOpenRequest({ request }: { request: Request }) {
   if (request.method !== "GET") {
-    return methodNotAllowed();
+    return methodNotAllowed(["GET"]);
   }
 
   const url = new URL(request.url);
@@ -42,11 +49,51 @@ function handleOpenRequest({ request }: { request: Request }) {
   });
 }
 
-function methodNotAllowed() {
+function handleTransmuteRequest({ request }: { request: Request }) {
+  if (request.method === "GET") {
+    return new Response(renderTransmuteFormPage(), {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8"
+      }
+    });
+  }
+
+  if (request.method !== "POST") {
+    return methodNotAllowed(["GET", "POST"]);
+  }
+
+  return request
+    .formData()
+    .then((formData) => {
+      const value = formData.get("url");
+
+      if (typeof value !== "string") {
+        return jsonError(400, "invalid_url");
+      }
+
+      const parsed = parseTransmuteInput(value);
+
+      if ("error" in parsed) {
+        return jsonError(400, parsed.error);
+      }
+
+      const openUrl = buildTransmuteOpenUrl(request.url, parsed);
+
+      return new Response(renderTransmuteResultPage({ openUrl }), {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store"
+        }
+      });
+    })
+    .catch(() => jsonError(400, "invalid_url"));
+}
+
+function methodNotAllowed(allow: string[]) {
   return new Response("Method Not Allowed", {
     status: 405,
     headers: {
-      Allow: "GET"
+      Allow: allow.join(", ")
     }
   });
 }
