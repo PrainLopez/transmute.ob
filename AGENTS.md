@@ -141,7 +141,16 @@ _Avoid_: Converter, transform page
 - 状态: Accepted
 - 日期: 2026-05-03
 - 背景: A transmuted link should work from whichever local address or host the user actually reached the app through.
-- 决策: Build the returned `http` URL from the current request origin, not from a separate configured base URL.
+- 决策: Build the returned local `/open` URL from the current request origin, not from a separate configured base URL.
 - 备选方案: Hardcode `LISTEN_IP:PORT` or add a distinct public base URL setting.
 - 决策原因: The copied link matches the visible browser address and automatically follows proxies, host aliases, and non-default ports.
 - 后果: The success page reflects the real access origin rather than a separate deployment setting.
+
+### ADR-009: Terse transmute error contract
+- 状态: Accepted
+- 日期: 2026-05-06
+- 背景: The reverse surface needs stable machine-readable failures without forcing the UI or tests to parse prose.
+- 决策: `POST /transmute` returns HTTP `400` for all conversion failures and emits only `{ "error": "..." }` using the fixed codes `invalid_url`, `unsupported_protocol`, `missing_vault`, `missing_file`, and `invalid_query`.
+- 备选方案: Use `422` for semantic failures, include human-readable messages, or expose richer error payloads.
+- 决策原因: Keeps the browser flow simple and makes failures easy to assert in tests and UIs.
+- 后果: Callers can branch on the error code alone, and the surface stays terse and predictable.
