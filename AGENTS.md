@@ -20,16 +20,16 @@ The Obsidian launch surface.
 _Avoid_: Transmute
 
 **Transmute**:
-The URL-conversion surface where a user pastes one `obsidian://open?vault=...&file=...` URL and receives the matching `http://.../open?vault=...&file=...` URL.
+The URL-conversion surface where a user pastes one `obsidian://open?vault=...&file=...` URL and the page rewrites it into the matching `http://.../open?vault=...&file=...` URL in browser.
 _Avoid_: Converter, transform page
 
 ## Relationships
 
 - **Open** and **Transmute** are separate surfaces
 - **Transmute** accepts one pasted `obsidian://open?vault=...&file=...` URL and returns the matching `http://.../open?vault=...&file=...` URL
-- **Transmute** uses `GET` to render a minimal form and `POST` with `application/x-www-form-urlencoded` to convert input
+- **Transmute** uses `GET` to render a minimal browser-side page that converts input in browser
 - **Transmute** uses the current request origin as the base for the returned `http` URL
-- **Transmute** returns minimal HTML on success and JSON error responses on failure
+- **Transmute** keeps copy action, back link, and validation errors client-side; no `POST /transmute`
 
 ## Example dialogue
 
@@ -41,29 +41,31 @@ _Avoid_: Converter, transform page
 - "URL content" means one pasted `obsidian://open?vault=...&file=...` URL, not arbitrary text.
 
 ## Feature
-- **Core /open handoff (#2)**: `GET /open?vault=...&file=...` validates a vault-relative note path and returns a minimal HTML handoff that opens Obsidian.
-- **Open request guardrails (#3)**: `GET /` is a plain health check, and `/open` rejects missing, empty, duplicate, extra, or absolute `file` values instead of guessing.
-- **Runtime bind and health check (#4)**: the server binds from `LISTEN_IP` and `PORT` with safe defaults, and startup logs the exact listen URL.
-- **Transmute URL conversion (#6)**: `GET /transmute` shows a minimal paste form; `POST /transmute` trims one pasted `obsidian://open?vault=...&file=...` URL, validates it with the same strict contract, and returns the matching local `http://.../open?...` URL with a copy button, a return link, and JSON errors on failure.
+- **Core /open handoff (#2)**: `GET /open?vault=...&file=...` first checks for exactly one `vault` and exactly one `file`, then rejects vaults outside `VAULT_ALLOWLIST`, then validates the vault-relative note path, and returns a minimal HTML handoff that opens Obsidian.
+- **Open request guardrails (#3)**: `GET /` is a plain health check, and `/open` rejects missing, empty, duplicate, extra, forbidden vault, or absolute `file` values instead of guessing.
+- **Runtime bind and health check (#4)**: the server binds from `LISTEN_IP` and `PORT` with safe defaults, `VAULT_ALLOWLIST` fails closed when empty or missing, and startup logs the exact listen URL.
+- **Transmute URL conversion (#6)**: `GET /transmute` shows a minimal browser-side conversion page; the browser trims one pasted `obsidian://open?vault=...&file=...` URL, validates it with the same strict contract, and returns the matching local `http://.../open?...` URL with a copy button, a return link, and inline errors.
 
 ## Contract
 - Public route: `GET /open?vault=...&file=...`
-- Only `vault` and `file`; reject missing, empty, duplicate, extra, or leading `/` in `file`
+- Only `vault` and `file`; first reject missing, empty, duplicate, or extra params by requiring exactly one `vault` and exactly one `file`, then reject forbidden vaults, then reject leading `/` in `file`
+- `VAULT_ALLOWLIST` is a comma-separated env var; trim entries, drop empties, dedupe, and fail closed when missing or empty
+- `/open` returns `403` with `{"error":"forbidden_vault"}` for vaults not in `VAULT_ALLOWLIST`
 - `GET /` returns plain `ok`
 - Other methods on `/` or `/open` return `405` + `Allow: GET`
 - Success response: minimal HTML, `location.href` to `obsidian://open?...`, visible fallback `<a>`, `Cache-Control: no-store`
 - Do not use `302` or `meta refresh`
-- Public route: `GET /transmute` and `POST /transmute`
-- `GET /transmute` returns minimal paste form
-- `POST /transmute` accepts `application/x-www-form-urlencoded` field `url`
-- `POST /transmute` trims input, accepts only `obsidian://open?vault=...&file=...`, and returns `400` JSON errors with `{ "error": "..." }`
-- `POST /transmute` success returns minimal HTML with copy action, back link, `Cache-Control: no-store`, and the matching `http://.../open?vault=...&file=...` URL from the current request origin
-- Other methods on `/transmute` return `405` + `Allow: GET, POST`
+- Public route: `GET /transmute`
+- `GET /transmute` returns a minimal browser-side conversion page with `Cache-Control: no-store`
+- The page accepts one pasted `obsidian://open?vault=...&file=...` URL, trims input, validates it in browser, and builds the matching local `http://.../open?vault=...&file=...` URL from the current request origin
+- The page shows copy action, return link, and inline errors using fixed codes `invalid_url`, `unsupported_protocol`, `missing_vault`, `missing_file`, and `invalid_query`
+- Other methods on `/transmute` return `405` + `Allow: GET`
 
 ## Runtime
 - `LISTEN_IP` default `127.0.0.1`
 - `PORT` default `3000`
-- Invalid env values fall back to defaults
+- `VAULT_ALLOWLIST` comma-separated; trim entries, drop empties, dedupe, and empty/missing means no vaults allowed
+- Invalid `LISTEN_IP` or `PORT` values fall back to defaults
 - `.env.example` mirrors the default env contract
 - Startup log must be exact: `Listening on http://IP:port`
 
@@ -154,3 +156,21 @@ _Avoid_: Converter, transform page
 - 备选方案: Use `422` for semantic failures, include human-readable messages, or expose richer error payloads.
 - 决策原因: Keeps the browser flow simple and makes failures easy to assert in tests and UIs.
 - 后果: Callers can branch on the error code alone, and the surface stays terse and predictable.
+
+### ADR-010: Vault allowlist gate
+- 状态: Accepted
+- 日期: 2026-05-07
+- 背景: `Open` needs a hard boundary so only approved vaults can receive local launch links.
+- 决策: Read `VAULT_ALLOWLIST` as a comma-separated list, trim entries, drop empties, dedupe, match vaults exactly and case-sensitively, fail closed when empty or missing, and return `403 {"error":"forbidden_vault"}` for disallowed vaults. This check runs after exact `vault`/`file` shape validation and before `file` syntax validation.
+- 备选方案: Normalize vault names, infer allowlist from current vault, or allow empty env.
+- 决策原因: Explicit allowlist is safer than guessing and keeps `/open` narrow.
+- 后果: Deploys must configure allowed vaults before launch links work.
+
+### ADR-011: Browser-side transmute page
+- 状态: Accepted
+- 日期: 2026-05-07
+- 背景: The reverse surface should stay a single GET page without a server conversion POST or shared parser bundle.
+- 决策: Serve `GET /transmute` as a minimal browser-side page that parses one pasted Obsidian URL with native browser APIs, builds the local `http://.../open?...` link from the current page origin, and handles copy/error UI client-side.
+- 备选方案: Keep `POST /transmute`, or share parser code between server and browser.
+- 决策原因: Fewer round trips, smaller surface, and no shared parser in the browser bundle.
+- 后果: `/transmute` is GET-only, and all conversion feedback lives in the page.
