@@ -29,7 +29,7 @@ _Avoid_: Converter, transform page
 - **Transmute** accepts one pasted `obsidian://open?vault=...&file=...` URL and returns the matching `http://.../open?vault=...&file=...` URL
 - **Transmute** uses `GET` to render a minimal browser-side page that converts input in browser
 - **Transmute** uses the current request origin as the base for the returned `http` URL
-- **Transmute** keeps copy action, back link, and validation errors client-side; no `POST /transmute`
+- **Transmute** keeps copy action, back link, copy-failure hint, and validation errors client-side; no `POST /transmute`
 
 ## Example dialogue
 
@@ -58,7 +58,7 @@ _Avoid_: Converter, transform page
 - Public route: `GET /transmute`
 - `GET /transmute` returns a minimal browser-side conversion page with `Cache-Control: no-store`
 - The page accepts one pasted `obsidian://open?vault=...&file=...` URL, trims input, validates it in browser, and builds the matching local `http://.../open?vault=...&file=...` URL from the current request origin
-- The page shows copy action, return link, and inline errors using fixed codes `invalid_url`, `unsupported_protocol`, `missing_vault`, `missing_file`, and `invalid_query`
+- The page shows copy action, return link, inline copy-failure feedback, and validation errors using fixed codes `invalid_url`, `unsupported_protocol`, `missing_vault`, `missing_file`, and `invalid_query`
 - Other methods on `/transmute` return `405` + `Allow: GET`
 
 ## Runtime
@@ -134,7 +134,7 @@ _Avoid_: Converter, transform page
 - 状态: Accepted
 - 日期: 2026-05-03
 - 背景: Need a reverse flow that turns Obsidian copy links back into reusable local HTTP links without changing the stable `/open` surface.
-- 决策: Add a dedicated `GET /transmute` + `POST /transmute` surface instead of overloading `/open`.
+- 决策: Add a dedicated `GET /transmute` page instead of overloading `/open`.
 - 备选方案: Add a mode flag to `/open` or fold both directions into the same route.
 - 决策原因: Keeps the launch surface stable, makes the inverse flow explicit, and avoids coupling the two contracts.
 - 后果: `/open` and `/transmute` can evolve independently, and the transmute page can own its own copy button and error presentation.
@@ -149,13 +149,13 @@ _Avoid_: Converter, transform page
 - 后果: The success page reflects the real access origin rather than a separate deployment setting.
 
 ### ADR-009: Terse transmute error contract
-- 状态: Accepted
+- 状态: Superseded
 - 日期: 2026-05-06
 - 背景: The reverse surface needs stable machine-readable failures without forcing the UI or tests to parse prose.
-- 决策: `POST /transmute` returns HTTP `400` for all conversion failures and emits only `{ "error": "..." }` using the fixed codes `invalid_url`, `unsupported_protocol`, `missing_vault`, `missing_file`, and `invalid_query`.
+- 决策: `POST /transmute` returned HTTP `400` for all conversion failures and emitted only `{ "error": "..." }` using the fixed codes `invalid_url`, `unsupported_protocol`, `missing_vault`, `missing_file`, and `invalid_query`.
 - 备选方案: Use `422` for semantic failures, include human-readable messages, or expose richer error payloads.
-- 决策原因: Keeps the browser flow simple and makes failures easy to assert in tests and UIs.
-- 后果: Callers can branch on the error code alone, and the surface stays terse and predictable.
+- 决策原因: Kept the browser flow simple and made failures easy to assert in tests and UIs.
+- 后果: Historical note only; current `/transmute` is GET-only and does not use this POST contract.
 
 ### ADR-010: Vault allowlist gate
 - 状态: Accepted

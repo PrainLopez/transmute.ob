@@ -70,6 +70,14 @@ describe("GET /open", () => {
 
     expect(response.status).toBe(400);
   });
+
+  test("rejects duplicate vault params", async () => {
+    const response = await app.handle(
+      new Request("http://localhost/open?vault=Vault&vault=Other&file=Notes/Today.md")
+    );
+
+    expect(response.status).toBe(400);
+  });
 });
 
 describe("GET /", () => {
