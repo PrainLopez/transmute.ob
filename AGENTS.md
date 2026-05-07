@@ -173,3 +173,12 @@ _Avoid_: Converter, transform page
 - 备选方案: Keep `POST /transmute`, or share parser code between server and browser.
 - 决策原因: Fewer round trips, smaller surface, and no shared parser in the browser bundle.
 - 后果: `/transmute` is GET-only, and all conversion feedback lives in the page.
+
+### ADR-012: Separate parser implementations
+- 状态: Accepted
+- 日期: 2026-05-07
+- 背景: `Open` validation and `Transmute` browser parsing live on opposite sides of the request boundary and serve different execution environments.
+- 决策: Keep the server-side validator and the browser-side parser as separate implementations; do not factor them into a shared parser module or bundle.
+- 备选方案: Share one parser across server and browser to keep both paths identical.
+- 决策原因: Each surface can stay small and native to its runtime, and the two implementations can evolve independently as long as their observable contracts stay aligned.
+- 后果: Some drift is acceptable if tests and docs continue to pin the public behavior.
