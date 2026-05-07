@@ -5,7 +5,7 @@ Keep this file current. Any change to routes, env vars, startup log, test layout
 ## Entry points
 - Main entry: `src/index.ts`
 - App/bootstrap: `src/app.ts`
-- Deep modules: `src/listen-config.ts`, `src/request-validator.ts`, `src/render-open-page.ts`, `src/obsidian-link.ts`
+- Deep modules: `src/listen-config.ts`, `src/request-validator.ts`, `src/render-open-page.ts`, `src/obsidian-link.ts`, `src/vault-allowlist.ts`
 - Transmute modules: `src/transmute.ts`, `src/render-transmute-page.ts`, `src/render-transmute-result-page.ts`, `src/json-response.ts`
 
 ## Commands

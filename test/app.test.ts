@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { app } from "../src/app";
+import { createApp } from "../src/app";
+
+const app = createApp({ env: { VAULT_ALLOWLIST: "Vault" } });
 
 describe("GET /open", () => {
   test("returns handoff HTML for valid vault and file", async () => {

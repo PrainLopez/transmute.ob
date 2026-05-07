@@ -11,6 +11,7 @@ import { renderTransmuteFormPage } from "./render-transmute-page";
 import { jsonError } from "./json-response";
 import { buildTransmuteOpenUrl, parseTransmuteInput } from "./transmute";
 import { renderTransmuteResultPage } from "./render-transmute-result-page";
+import { resolveVaultAllowlist, type VaultAllowlistEnv } from "./vault-allowlist";
 
 type ListenDeps = {
   env?: ListenEnv;
@@ -18,22 +19,32 @@ type ListenDeps = {
   start?: (config: ListenConfig) => unknown;
 };
 
-export const app = new Elysia()
-  .all("/", handleRootRequest)
-  .all("/open", handleOpenRequest)
-  .all("/transmute", handleTransmuteRequest);
+type AppDeps = {
+  env?: VaultAllowlistEnv;
+};
+
+export function createApp(deps: AppDeps = {}) {
+  const allowedVaults = new Set(resolveVaultAllowlist(deps.env));
+
+  return new Elysia()
+    .all("/", handleRootRequest)
+    .all("/open", ({ request }) => handleOpenRequest(request, allowedVaults))
+    .all("/transmute", handleTransmuteRequest);
+}
+
+export const app = createApp({ env: Bun.env });
 
 function handleRootRequest({ request }: { request: Request }) {
   return request.method === "GET" ? "ok" : methodNotAllowed(["GET"]);
 }
 
-function handleOpenRequest({ request }: { request: Request }) {
+function handleOpenRequest(request: Request, allowedVaults: ReadonlySet<string>) {
   if (request.method !== "GET") {
     return methodNotAllowed(["GET"]);
   }
 
   const url = new URL(request.url);
-  const validated = validateOpenRequest(url);
+  const validated = validateOpenRequest(url, allowedVaults);
 
   if (validated instanceof Response) {
     return validated;
