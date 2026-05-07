@@ -90,21 +90,23 @@ describe("GET /", () => {
 });
 
 describe("POST /open", () => {
-  test("returns method not allowed", async () => {
+  test("uses the framework default response", async () => {
     const response = await app.handle(
       new Request("http://localhost/open", { method: "POST" })
     );
 
-    expect(response.status).toBe(405);
-    expect(response.headers.get("allow")).toBe("GET");
+    expect(response.status).toBe(404);
+    expect(response.headers.get("allow")).toBeNull();
+    expect(await response.text()).toBe("NOT_FOUND");
   });
 });
 
 describe("POST /", () => {
-  test("returns method not allowed", async () => {
+  test("uses the framework default response", async () => {
     const response = await app.handle(new Request("http://localhost/", { method: "POST" }));
 
-    expect(response.status).toBe(405);
-    expect(response.headers.get("allow")).toBe("GET");
+    expect(response.status).toBe(404);
+    expect(response.headers.get("allow")).toBeNull();
+    expect(await response.text()).toBe("NOT_FOUND");
   });
 });

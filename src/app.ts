@@ -24,22 +24,14 @@ export function createApp(deps: AppDeps = {}) {
   const allowedVaults = new Set(resolveVaultAllowlist(deps.env));
 
   return new Elysia()
-    .all("/", handleRootRequest)
-    .all("/open", ({ request }) => handleOpenRequest(request, allowedVaults))
+    .get("/", () => "ok")
+    .get("/open", ({ request }) => handleOpenRequest(request, allowedVaults))
     .get("/transmute", handleTransmuteRequest);
 }
 
 export const app = createApp({ env: Bun.env });
 
-function handleRootRequest({ request }: { request: Request }) {
-  return request.method === "GET" ? "ok" : methodNotAllowed(["GET"]);
-}
-
 function handleOpenRequest(request: Request, allowedVaults: ReadonlySet<string>) {
-  if (request.method !== "GET") {
-    return methodNotAllowed(["GET"]);
-  }
-
   const url = new URL(request.url);
   const validated = validateOpenRequest(url, allowedVaults);
 
@@ -62,15 +54,6 @@ function handleTransmuteRequest({ request }: { request: Request }) {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store"
-    }
-  });
-}
-
-function methodNotAllowed(allow: string[]) {
-  return new Response("Method Not Allowed", {
-    status: 405,
-    headers: {
-      Allow: allow.join(", ")
     }
   });
 }

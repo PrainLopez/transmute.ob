@@ -42,7 +42,7 @@ _Avoid_: Converter, transform page
 
 ## Feature
 - **Core /open handoff (#2)**: `GET /open?vault=...&file=...` first checks for exactly one `vault` and exactly one `file`, then rejects vaults outside `VAULT_ALLOWLIST`, then validates the vault-relative note path, and returns a minimal HTML handoff that opens Obsidian.
-- **Open request guardrails (#3)**: `GET /` is a plain health check, and `/open` rejects missing, empty, duplicate, extra, forbidden vault, or absolute `file` values instead of guessing.
+- **Open request guardrails (#3)**: `GET /` is a plain health check, and `/open` rejects missing, empty, duplicate, extra, forbidden vault, or absolute `file` values instead of guessing. Un-declared methods on `/` or `/open` fall through to the framework default response.
 - **Runtime bind and health check (#4)**: the server binds from `LISTEN_IP` and `PORT` with safe defaults, `VAULT_ALLOWLIST` fails closed when empty or missing, and startup logs the exact listen URL.
 - **Transmute URL conversion (#6)**: `GET /transmute` shows a minimal browser-side conversion page; the browser trims one pasted `obsidian://open?vault=...&file=...` URL, validates it with the same strict contract, and returns the matching local `http://.../open?...` URL with a copy button, a return link, and inline errors.
 
@@ -52,14 +52,13 @@ _Avoid_: Converter, transform page
 - `VAULT_ALLOWLIST` is a comma-separated env var; trim entries, drop empties, dedupe, and fail closed when missing or empty
 - `/open` returns `403` with `{"error":"forbidden_vault"}` for vaults not in `VAULT_ALLOWLIST`
 - `GET /` returns plain `ok`
-- Other methods on `/` or `/open` return `405` + `Allow: GET`
+- Un-declared methods on `/` or `/open` fall through to the framework default response.
 - Success response: minimal HTML, `location.href` to `obsidian://open?...`, visible fallback `<a>`, `Cache-Control: no-store`
 - Do not use `302` or `meta refresh`
 - Public route: `GET /transmute`
 - `GET /transmute` returns a minimal browser-side conversion page with `Cache-Control: no-store`
 - The page accepts one pasted `obsidian://open?vault=...&file=...` URL, trims input, validates it in browser, and builds the matching local `http://.../open?vault=...&file=...` URL from the current request origin
 - The page shows copy action, return link, inline copy-failure feedback, and validation errors using fixed codes `invalid_url`, `unsupported_protocol`, `missing_vault`, `missing_file`, and `invalid_query`
-- Other methods on `/transmute` return `405` + `Allow: GET`
 
 ## Runtime
 - `LISTEN_IP` default `127.0.0.1`
@@ -98,7 +97,7 @@ _Avoid_: Converter, transform page
 - 状态: Accepted
 - 日期: 2026-05-01
 - 背景: Need broken links to fail fast and clearly.
-- 决策: Reject missing, empty, duplicate, or extra params with `400 Bad Request`; `GET /` returns `ok`; other methods on `/` or `/open` return `405` with `Allow: GET`.
+- 决策: Reject missing, empty, duplicate, or extra params with `400 Bad Request`; `GET /` returns `ok`; undeclared methods on `/` or `/open` use the framework default response.
 - 备选方案: Accept partial input or infer defaults.
 - 决策原因: No guessing, no ambiguity, no hidden behavior.
 - 后果: Callers must send exact input.

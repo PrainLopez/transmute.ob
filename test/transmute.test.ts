@@ -33,7 +33,8 @@ describe("non-GET /transmute", () => {
   test("uses the framework default response", async () => {
     const response = await app.handle(new Request("http://localhost/transmute", { method: "POST" }));
 
-    expect(response.status).not.toBe(405);
+    expect(response.status).toBe(404);
     expect(response.headers.get("allow")).toBeNull();
+    expect(await response.text()).toBe("NOT_FOUND");
   });
 });
