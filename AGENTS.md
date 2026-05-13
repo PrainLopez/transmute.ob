@@ -4,9 +4,10 @@ Keep this file current. Any change to routes, env vars, runtime, startup behavio
 
 ## Current Baseline
 
-- The checked-in source still reflects the Bun/Elysia era implementation and its contract tests.
-- The target rewrite is Cloudflare Workers + Hono.
-- Treat Bun-specific runtime wiring as migration scaffolding, not the end state.
+- This repo is now a fresh Cloudflare Workers + Hono scaffold.
+- Only `AGENTS.md` and `.gitignore` were carried over from the previous codebase.
+- The checked-in source currently contains the starter Hono route in `src/index.ts`; treat it as scaffold, not contract code.
+- The Open/Transmute app is the real target implementation.
 
 ## Project Vocabulary
 
@@ -51,24 +52,34 @@ Avoid: Converter, transform page.
 - Do not keep Bun as the runtime or test runner in the target architecture.
 - Use `vitest` with `@cloudflare/vitest-pool-workers` for tests.
 - Keep the Open validator and Transmute browser parser as separate implementations.
-- Keep page rendering as string templates, not JSX.
+- Keep page rendering as string templates, not JSX. The starter `tsconfig` may still mention JSX defaults, but they are not the rendering model.
 - Keep core logic in deep modules with small, testable interfaces.
+
+## Package Manager
+
+- Local package manager environment is Bun.
+- Use `bun install` to install dependencies.
+- Use `bun run <script>` to execute package scripts.
+- Treat Bun here as the package manager and local script runner, not the deployment runtime.
 
 ## Entry Points
 
-- Main Worker entry: `src/index.ts`
-- App/bootstrap: `src/app.ts`
-- Deep modules: `src/request-validator.ts`, `src/transmute.ts`, `src/obsidian-link.ts`, `src/vault-allowlist.ts`, `src/json-response.ts`, `src/render-open-page.ts`, `src/render-transmute-page.ts`, `src/render-transmute-result-page.ts`
-- Legacy-only runtime helper to remove during the rewrite: `src/listen-config.ts` and any Bun startup wiring
+- Current Worker entry: `src/index.ts`
+- Planned app/bootstrap: `src/app.ts`
+- Planned deep modules: `src/request-validator.ts`, `src/transmute.ts`, `src/obsidian-link.ts`, `src/vault-allowlist.ts`, `src/json-response.ts`, `src/render-open-page.ts`, `src/render-transmute-page.ts`, `src/render-transmute-result-page.ts`
+- Do not add Bun-era listen/startup wiring back into the final architecture.
 
 ## Commands
 
-- Target dev: `wrangler dev`
-- Target tests: `vitest`
+- Dev: `bun run dev` (`wrangler dev`)
+- Deploy: `bun run deploy` (`wrangler deploy --minify`)
+- Types: `bun run cf-typegen` (`wrangler types --env-interface CloudflareBindings`)
+- Tests: `vitest` with `@cloudflare/vitest-pool-workers` once the test scripts are added
 - Keep `README.md` and `package.json` in sync with any command changes.
 
 ## Testing Decisions
 
+- The new scaffold does not yet have a test suite.
 - Good tests cover external behavior only: status codes, headers, bodies, route fallthrough, and generated URLs.
 - Good tests do not assert Hono internals or private helper control flow.
 - Test the worker entry point and route behavior under a Workers-native test environment.
@@ -79,11 +90,12 @@ Avoid: Converter, transform page.
 - Add smoke coverage for default method fallthrough on `/` and `/open`.
 - Add coverage for current-origin URL construction used by Transmute.
 
-## Workflow
+## Workflow 
 
 - Prefer executable sources of truth over prose.
 - Update this file whenever routes, env vars, startup behavior, commands, or observable behavior change.
 - If you add or change commands, update `README.md` and `package.json` together.
+- Keep the scaffold honest: replace starter behavior instead of layering the product contract around it.
 
 ## ADR
 
