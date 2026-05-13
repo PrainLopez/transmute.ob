@@ -1,9 +1,7 @@
-import { Hono } from 'hono'
+import { createApp, type AppBindings } from './app'
 
-const app = new Hono()
-
-app.get('/', (c) => {
-  return c.text('Hello Hono!')
-})
-
-export default app
+export default {
+  fetch(request: Request, env: AppBindings, ctx: ExecutionContext) {
+    return createApp(env).fetch(request, env, ctx)
+  },
+}

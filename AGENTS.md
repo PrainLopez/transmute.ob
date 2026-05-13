@@ -4,9 +4,9 @@ Keep this file current. Any change to routes, env vars, runtime, startup behavio
 
 ## Current Baseline
 
-- This repo is now a fresh Cloudflare Workers + Hono scaffold.
+- This repo is now a Cloudflare Workers + Hono scaffold with a Worker `fetch` entry point and app factory in `src/index.ts` and `src/app.ts`.
 - Only `AGENTS.md` and `.gitignore` were carried over from the previous codebase.
-- The checked-in source currently contains the starter Hono route in `src/index.ts`; treat it as scaffold, not contract code.
+- The checked-in source currently contains the root `GET /` health route; treat it as scaffold, not contract code.
 - The Open/Transmute app is the real target implementation.
 
 ## Project Vocabulary
@@ -65,7 +65,7 @@ Avoid: Converter, transform page.
 ## Entry Points
 
 - Current Worker entry: `src/index.ts`
-- Planned app/bootstrap: `src/app.ts`
+- Current app factory: `src/app.ts`
 - Planned deep modules: `src/request-validator.ts`, `src/transmute.ts`, `src/obsidian-link.ts`, `src/vault-allowlist.ts`, `src/json-response.ts`, `src/render-open-page.ts`, `src/render-transmute-page.ts`, `src/render-transmute-result-page.ts`
 - Do not add Bun-era listen/startup wiring back into the final architecture.
 
@@ -73,13 +73,13 @@ Avoid: Converter, transform page.
 
 - Dev: `bun run dev` (`wrangler dev`)
 - Deploy: `bun run deploy` (`wrangler deploy --minify`)
+- Test: `bun run test` (`vitest run`)
 - Types: `bun run cf-typegen` (`wrangler types --env-interface CloudflareBindings`)
-- Tests: `vitest` with `@cloudflare/vitest-pool-workers` once the test scripts are added
 - Keep `README.md` and `package.json` in sync with any command changes.
 
 ## Testing Decisions
 
-- The new scaffold does not yet have a test suite.
+- The test suite uses `vitest` with `@cloudflare/vitest-pool-workers`.
 - Good tests cover external behavior only: status codes, headers, bodies, route fallthrough, and generated URLs.
 - Good tests do not assert Hono internals or private helper control flow.
 - Test the worker entry point and route behavior under a Workers-native test environment.
