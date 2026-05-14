@@ -6,7 +6,7 @@ Keep this file current. Any change to routes, env vars, runtime, startup behavio
 
 - This repo is now a Cloudflare Workers + Hono scaffold with a Worker `fetch` entry point and app factory in `src/index.ts` and `src/app.ts`.
 - Only `AGENTS.md` and `.gitignore` were carried over from the previous codebase.
-- The checked-in source currently contains the root `GET /` health route; treat it as scaffold, not contract code.
+- The checked-in source currently contains the root `GET /` health route, the `GET /open` launch route, and the `GET /transmute` browser-side conversion page.
 - The Open/Transmute app is the real target implementation.
 
 ## Project Vocabulary
@@ -38,6 +38,7 @@ Avoid: Converter, transform page.
 - `GET /transmute` accepts one pasted `obsidian://open?vault=...&file=...` URL, trims input, validates it in the browser, and builds the matching local `http://.../open?vault=...&file=...` URL from the current request origin.
 - The Transmute page shows copy action, return link, inline copy-failure feedback, and validation errors using fixed codes `invalid_url`, `unsupported_protocol`, `missing_vault`, `missing_file`, and `invalid_query`.
 - Undeclared methods on `/` or `/open` fall through to the framework default response.
+- Undeclared methods on `/transmute` fall through to the framework default response.
 - Do not use `302` or `meta refresh`.
 
 ## Workers Rewrite Decisions
@@ -87,7 +88,7 @@ Avoid: Converter, transform page.
 - Test Transmute page output and browser-side conversion behavior as observable HTML and generated URLs.
 - Test the deep modules that encode business rules: allowlist parsing, request validation, Obsidian URL construction, and HTML rendering.
 - Keep the existing contract tests as prior art, but port them to the Workers-native test stack.
-- Add smoke coverage for default method fallthrough on `/` and `/open`.
+- Current Workers-native smoke tests cover `GET /`, `GET /open`, `GET /transmute`, `POST /` fallback, `POST /open` fallback, and `POST /transmute` fallback.
 - Add coverage for current-origin URL construction used by Transmute.
 
 ## Workflow 
